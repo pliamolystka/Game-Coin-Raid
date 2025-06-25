@@ -4,6 +4,7 @@
 #include <math.h>
 #include <unistd.h>
 #include "controlPlayer.h"
+#include "gameLevel2.h"
 #include "menu.h"
 
 const int width = 30;
@@ -17,6 +18,8 @@ int afterPlayerY;
 int health = 3;
 const char *hearts[3];
 int coin = 0;
+int heart = 0;
+int portal = 0;
 int moveCounter = 0;
 #define MAX_ENEMIES 10
 int enemyX[MAX_ENEMIES];
@@ -71,25 +74,38 @@ void drawMap()
             else if (map[y][x] == 8)
                 printf("\033[93m\u25C9\033[0m");
             else if (map[y][x] == 9)
-                printf("\033[31m\u2665\033[0m\n");
+                printf("\033[31m\u2665\033[0m");
+            else if(map[y][x] == 10) 
+                printf("#");
             else
                 printf("?");
         }
         printf("\n");
     }
 }
+void drawPortal(int x, int y){
+        if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
+        map[y][x] = 10;
+}
 void drawHeart(int x, int y)
 {
-    if (health < 3)
-    {
-        if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
-            map[y][x] = 9;
-    }
+    if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
+        map[y][x] = 9;
 }
 void drawBonus(int x, int y)
 {
     if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
         map[y][x] = 8;
+}
+void spawnPortal()
+{
+    int x, y;
+    do
+    {
+        x = rand() % width;
+        y = rand() % height;
+    } while (map[y][x] != 0);
+    drawPortal(x, y);
 }
 void spawnBonus()
 {
@@ -100,6 +116,7 @@ void spawnBonus()
         y = rand() % height;
     } while (map[y][x] != 0);
     drawBonus(x, y);
+    portal ++;
 }
 void spawnHeart()
 {
@@ -115,17 +132,18 @@ void loseScreen()
 {
     system("clear");
     printf("\n\n");
-    char lose[10][20] = {
-        {'*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*'},
-        {'*', ' ', '*', '*', '*', '*', '*', ' ', '*', '*', '*', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*'},
-        {'*', ' ', '*', '*', '*', '*', ' ', '*', ' ', '*', '*', ' ', '*', '*', '*', '*', ' ', '*', '*', '*'},
-        {'*', ' ', '*', '*', '*', ' ', '*', '*', '*', ' ', '*', ' ', '*', '*', '*', '*', ' ', '*', '*', '*'},
-        {'*', ' ', '*', '*', '*', ' ', '*', '*', '*', ' ', '*', ' ', ' ', ' ', '*', '*', ' ', ' ', ' ', '*'},
-        {'*', ' ', '*', '*', '*', ' ', '*', '*', '*', ' ', '*', '*', '*', '*', ' ', '*', ' ', '*', '*', '*'},
-        {'*', ' ', '*', '*', '*', ' ', '*', '*', '*', ' ', '*', '*', '*', '*', ' ', '*', ' ', '*', '*', '*'},
-        {'*', ' ', '*', '*', '*', '*', ' ', '*', ' ', '*', '*', '*', '*', '*', ' ', '*', ' ', '*', '*', '*'},
-        {'*', ' ', ' ', ' ', '*', '*', '*', ' ', '*', '*', '*', ' ', ' ', ' ', '*', '*', ' ', ' ', ' ', '*'},
-        {'*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*'}};
+    char lose[10][20] =
+        {
+            {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+            {' ', '*', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', '*', '*', '*', ' ', '*', '*', '*', ' '},
+            {' ', '*', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', '*', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' '},
+            {' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' '},
+            {' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', ' ', '*', '*', '*', ' ', ' ', '*', '*', '*', ' '},
+            {' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' '},
+            {' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' '},
+            {' ', '*', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' '},
+            {' ', '*', '*', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', '*', '*', ' ', ' ', '*', '*', '*', ' '},
+            {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}};
 
     for (int i = 0; i < 10; i++)
     {
@@ -147,6 +165,21 @@ void loseScreen()
 //         hearts[i] = "♥";
 //     }
 // }
+void checkColisionPortal(){
+        for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (map[i][j] == 10 && abs(j - playerX) <= 1 && abs(i - playerY) <= 1)
+            {
+                portal --;
+                coin -= 20;
+                startLevel2();
+                map[i][j] = 0;
+            }
+        }
+    }
+}
 void checkColisionBonus()
 {
     for (int i = 0; i < height; i++)
@@ -158,6 +191,21 @@ void checkColisionBonus()
                 coin++;
                 map[i][j] = 0;
                 spawnBonus();
+            }
+        }
+    }
+}
+void checkColisionHeart()
+{
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (map[i][j] == 9 && abs(j - playerX) <= 1 && abs(i - playerY) <= 1)
+            {
+                health++;
+                heart = 0;
+                map[i][j] = 0;
             }
         }
     }
@@ -226,7 +274,7 @@ void drawPlayer(int x, int y)
     if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
         map[y][x] = 6;
 }
-void controlPlayer()
+void gameLoop()
 {
     char c;
     drawPlayer(playerX, playerY);
@@ -258,12 +306,23 @@ void controlPlayer()
                 loseScreen();
                 break;
             }
+            else if (health < 3 && heart != 1)
+            {
+                spawnHeart();
+                heart=1;
+            }
+            if(coin >= 10 && portal == 0) {
+                portal++;
+                spawnPortal();
+            }
             // substructHeard();
             drawPlayer(playerX, playerY);
             moveEnemies();
             moveCounter += 2;
             refreshEnemiesOnMap();
             checkColisionBonus();
+            checkColisionHeart();
+            checkColisionPortal();
             system("clear");
             printf("coins: %d   health: %d\n", coin, health);
             drawMap();
@@ -304,9 +363,8 @@ void startGame()
     randomPlant();
     spawnEnemies();
     spawnBonus();
-    spawnHeart();
     drawMap();
     beforePlayerX = playerX;
     beforePlayerY = playerY;
-    controlPlayer();
+    gameLoop();
 }

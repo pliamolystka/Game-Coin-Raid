@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "gameLevel1.h"
 #include "menu.h"
+#include "rules.h"
 
 char startTheNewGame[20] = "Start New Game";
 char Rules[8] = "Rules";
@@ -69,5 +70,6 @@ void choiceMenu() {
             break;
         }
         else if(c == '\n' && choice == 1) startGame();
+        // else if(c == '\n' && choice == 2) drawRules();
     }
 }
