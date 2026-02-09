@@ -1,3 +1,4 @@
+// Підключення файлів та бібліотек
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -6,7 +7,8 @@
 #include "controlPlayer.h"
 #include "gameLevel2.h"
 #include "menu.h"
-
+#include "hint.h"
+// Створенння глобальних змінних
 const int width = 30;
 const int height = 11;
 int playerX = 2;
@@ -20,13 +22,14 @@ const char *hearts[3];
 int coin = 0;
 int heart = 0;
 int portal = 0;
+int level = 1;
 int moveCounter = 0;
 #define MAX_ENEMIES 10
 int enemyX[MAX_ENEMIES];
 int enemyY[MAX_ENEMIES];
 int countEnemies = 0;
 
-int map[height][width] = {
+int mapLevel1[height][width] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
     {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
@@ -38,17 +41,18 @@ int map[height][width] = {
     {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
     {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
-int tmpMap[height][width];
-void TMPMap()
+int map[height][width];
+void createMapLevel1()
 {
-    for (int y = 0; y < height; y++)
+    for (int i = 0; i < height; i++)
     {
-        for (int x = 0; x < width; x++)
+        for (int j = 0; j < width; j++)
         {
-            tmpMap[y][x] = map[y][x];
+            map[i][j] = mapLevel1[i][j];
         }
     }
 }
+// функція для малювання мапи
 void drawMap()
 {
     for (int y = 0; y < height; y++)
@@ -75,7 +79,7 @@ void drawMap()
                 printf("\033[93m\u25C9\033[0m");
             else if (map[y][x] == 9)
                 printf("\033[31m\u2665\033[0m");
-            else if(map[y][x] == 10) 
+            else if (map[y][x] == 10)
                 printf("#");
             else
                 printf("?");
@@ -83,8 +87,9 @@ void drawMap()
         printf("\n");
     }
 }
-void drawPortal(int x, int y){
-        if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
+void drawPortal(int x, int y)
+{
+    if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
         map[y][x] = 10;
 }
 void drawHeart(int x, int y)
@@ -116,7 +121,6 @@ void spawnBonus()
         y = rand() % height;
     } while (map[y][x] != 0);
     drawBonus(x, y);
-    portal ++;
 }
 void spawnHeart()
 {
@@ -165,17 +169,18 @@ void loseScreen()
 //         hearts[i] = "♥";
 //     }
 // }
-void checkColisionPortal(){
-        for (int i = 0; i < height; i++)
+void checkColisionPortal()
+{
+    for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
             if (map[i][j] == 10 && abs(j - playerX) <= 1 && abs(i - playerY) <= 1)
             {
-                portal --;
                 coin -= 20;
-                startLevel2();
+                portal = 0;
                 map[i][j] = 0;
+                startLevel2();
             }
         }
     }
@@ -274,15 +279,8 @@ void drawPlayer(int x, int y)
     if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
         map[y][x] = 6;
 }
-void gameLoop()
-{
-    char c;
-    drawPlayer(playerX, playerY);
-    while (1)
-    {
-        if (kbhit())
-        {
-            c = getchar();
+void movePlayer(){
+    char c = getchar();
             beforePlayerX = playerX;
             beforePlayerY = playerY;
             map[playerY][playerX] = 0;
@@ -295,10 +293,28 @@ void gameLoop()
                 playerX--;
             else if ((c == 'd' || c == 'D') && map[playerY][playerX + 1] == 0)
                 playerX++;
-            else if ((c == 'q' || c == 'Q'))
-                break;
             afterPlayerX = playerX;
             afterPlayerY = playerY;
+}
+void showHint()
+{
+    if (health == 3){
+    if(level == 1)printf("%s\n", portal == 0 ? hint1 : hint2);
+    }
+    else if(health < 3) printf("%s\n", hint3);
+    else printf("%s\n", hint4);
+}
+void gameLoop()
+{
+    char c;
+    drawPlayer(playerX, playerY);
+    while (1)
+    {
+        if (kbhit())
+        {
+            movePlayer();
+            if ((c == 'q' || c == 'Q'))
+                break;
             if (beforePlayerX == afterPlayerX && beforePlayerY == afterPlayerY)
                 health--;
             if (health <= 0)
@@ -309,10 +325,11 @@ void gameLoop()
             else if (health < 3 && heart != 1)
             {
                 spawnHeart();
-                heart=1;
+                heart = 1;
             }
-            if(coin >= 10 && portal == 0) {
-                portal++;
+            if (coin >= 2 && portal == 0)
+            {
+                portal += 1;
                 spawnPortal();
             }
             // substructHeard();
@@ -325,6 +342,7 @@ void gameLoop()
             checkColisionPortal();
             system("clear");
             printf("coins: %d   health: %d\n", coin, health);
+            showHint();
             drawMap();
         }
 
@@ -359,7 +377,7 @@ void startGame()
     system("clear");
     srand(time(NULL));
     resetVariable();
-    printf("coins: %d\n", coin);
+    createMapLevel1();
     randomPlant();
     spawnEnemies();
     spawnBonus();
