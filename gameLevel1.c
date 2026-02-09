@@ -1,370 +1,222 @@
+// ================== INCLUDES ==================
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 #include <unistd.h>
+
 #include "controlPlayer.h"
 #include "gameLevel2.h"
 #include "menu.h"
+#include "hint.h"
 
-const int width = 30;
-const int height = 11;
-int playerX = 2;
-int playerY = 2;
-int beforePlayerX;
-int beforePlayerY;
-int afterPlayerX;
-int afterPlayerY;
+// ================== CONSTANTS ==================
+#define WIDTH 30
+#define HEIGHT 11
+#define MAX_ENEMIES 10
+
+// ================== GLOBAL ==================
+int playerX = 2, playerY = 2;
+int beforePlayerX, beforePlayerY;
+int afterPlayerX, afterPlayerY;
+
 int health = 3;
-const char *hearts[3];
 int coin = 0;
 int heart = 0;
 int portal = 0;
+int level = 1;
+
 int moveCounter = 0;
-#define MAX_ENEMIES 10
+
 int enemyX[MAX_ENEMIES];
 int enemyY[MAX_ENEMIES];
 int countEnemies = 0;
 
-int map[height][width] = {
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
-int tmpMap[height][width];
-void TMPMap()
-{
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            tmpMap[y][x] = map[y][x];
-        }
-    }
+int map[HEIGHT][WIDTH];
+
+// ================== BASE MAP ==================
+int mapLevel1[HEIGHT][WIDTH] = {
+ {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
+ {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+};
+
+// ================== MAP ==================
+void initMap() {
+    for(int y=0;y<HEIGHT;y++)
+        for(int x=0;x<WIDTH;x++)
+            map[y][x]=mapLevel1[y][x];
 }
-void drawMap()
-{
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            if (map[y][x] == 0)
-                printf(" ");
-            else if (map[y][x] == 1)
-                printf("-");
-            else if (map[y][x] == 2)
-                printf("|");
-            else if (map[y][x] == 3)
-                printf("\033[36m*\033[0m");
-            else if (map[y][x] == 4)
-                printf("\033[92m\u2663\033[0m");
-            else if (map[y][x] == 5)
-                printf("\u26F0");
-            else if (map[y][x] == 6)
-                printf("⛹");
-            else if (map[y][x] == 7)
-                printf("\033[31m@\033[0m");
-            else if (map[y][x] == 8)
-                printf("\033[93m\u25C9\033[0m");
-            else if (map[y][x] == 9)
-                printf("\033[31m\u2665\033[0m");
-            else if(map[y][x] == 10) 
-                printf("#");
-            else
-                printf("?");
+
+int isFree(int x,int y){
+    return x>=0 && x<WIDTH && y>=0 && y<HEIGHT && map[y][x]==0;
+}
+
+void placeOnMap(int x,int y,int type){
+    if(isFree(x,y)) map[y][x]=type;
+}
+
+// ================== SPAWN ==================
+void spawnObject(int type){
+    int x,y;
+    do{
+        x=rand()%WIDTH;
+        y=rand()%HEIGHT;
+    }while(!isFree(x,y));
+
+    placeOnMap(x,y,type);
+}
+
+// ================== DRAW ==================
+void drawMap(){
+    for(int y=0;y<HEIGHT;y++){
+        for(int x=0;x<WIDTH;x++){
+            switch(map[y][x]){
+                case 0: printf(" "); break;
+                case 1: printf("-"); break;
+                case 2: printf("|"); break;
+                case 6: printf("⛹"); break;
+                case 7: printf("@"); break;
+                case 8: printf("○"); break;
+                case 9: printf("♥"); break;
+                case 10: printf("#"); break;
+                default: printf("?"); break;
+            }
         }
         printf("\n");
     }
 }
-void drawPortal(int x, int y){
-        if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
-        map[y][x] = 10;
+
+// ================== PLAYER ==================
+void drawPlayer(){
+    placeOnMap(playerX,playerY,6);
 }
-void drawHeart(int x, int y)
-{
-    if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
-        map[y][x] = 9;
+
+void movePlayer(){
+    char c=getchar();
+
+    beforePlayerX=playerX;
+    beforePlayerY=playerY;
+
+    map[playerY][playerX]=0;
+
+    if((c=='w'||c=='W')&&isFree(playerX,playerY-1)) playerY--;
+    if((c=='s'||c=='S')&&isFree(playerX,playerY+1)) playerY++;
+    if((c=='a'||c=='A')&&isFree(playerX-1,playerY)) playerX--;
+    if((c=='d'||c=='D')&&isFree(playerX+1,playerY)) playerX++;
+
+    afterPlayerX=playerX;
+    afterPlayerY=playerY;
 }
-void drawBonus(int x, int y)
-{
-    if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
-        map[y][x] = 8;
+
+// ================== ENEMIES ==================
+void spawnEnemies(){
+    countEnemies=3+rand()%5;
+
+    for(int i=0;i<countEnemies;i++){
+        spawnObject(7);
+        enemyX[i]=playerX;
+        enemyY[i]=playerY;
+    }
 }
-void spawnPortal()
-{
-    int x, y;
-    do
-    {
-        x = rand() % width;
-        y = rand() % height;
-    } while (map[y][x] != 0);
-    drawPortal(x, y);
+
+void moveEnemies(){
+    if(moveCounter++%3!=0) return;
+
+    for(int i=0;i<countEnemies;i++){
+
+        map[enemyY[i]][enemyX[i]]=0;
+
+        if(enemyX[i]<playerX) enemyX[i]++;
+        else if(enemyX[i]>playerX) enemyX[i]--;
+        else if(enemyY[i]<playerY) enemyY[i]++;
+        else if(enemyY[i]>playerY) enemyY[i]--;
+
+        placeOnMap(enemyX[i],enemyY[i],7);
+    }
 }
-void spawnBonus()
-{
-    int x, y;
-    do
-    {
-        x = rand() % width;
-        y = rand() % height;
-    } while (map[y][x] != 0);
-    drawBonus(x, y);
-    portal ++;
+
+// ================== LOGIC ==================
+void updateHealth(){
+
+    if(beforePlayerX==afterPlayerX &&
+       beforePlayerY==afterPlayerY)
+        health--;
+
+    if(health<=0) loseScreen();
 }
-void spawnHeart()
-{
-    int x, y;
-    do
-    {
-        x = rand() % width;
-        y = rand() % height;
-    } while (map[y][x] != 0);
-    drawHeart(x, y);
+
+void updateObjects(){
+
+    if(coin>=2 && portal==0){
+        portal=1;
+        spawnObject(10);
+    }
+
+    if(health<3 && heart==0){
+        heart=1;
+        spawnObject(9);
+    }
 }
-void loseScreen()
-{
+
+void render(){
     system("clear");
-    printf("\n\n");
-    char lose[10][20] =
-        {
-            {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
-            {' ', '*', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', '*', '*', '*', ' ', '*', '*', '*', ' '},
-            {' ', '*', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', '*', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' '},
-            {' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' '},
-            {' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', ' ', '*', '*', '*', ' ', ' ', '*', '*', '*', ' '},
-            {' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' '},
-            {' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' '},
-            {' ', '*', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' ', ' ', ' ', '*', ' ', '*', ' ', ' ', ' '},
-            {' ', '*', '*', '*', ' ', ' ', ' ', '*', ' ', ' ', ' ', '*', '*', '*', ' ', ' ', '*', '*', '*', ' '},
-            {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}};
+    printf("Coins: %d  Health: %d\n",coin,health);
+    drawMap();
+}
 
-    for (int i = 0; i < 10; i++)
-    {
-        for (int j = 0; j < 20; j++)
-        {
-            printf("%c", lose[i][j]);
-            fflush(stdout);
-            usleep(20000);
-        }
-        printf("\n");
-        usleep(30000);
-    }
-    printf("\nDuring the game you collected coins: %d\n", coin);
-    usleep(30000);
-    choiceMenu();
-}
-// void substructHeard(){
-//     for(int i = 0; i < health; i++){
-//         hearts[i] = "♥";
-//     }
-// }
-void checkColisionPortal(){
-        for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
-            if (map[i][j] == 10 && abs(j - playerX) <= 1 && abs(i - playerY) <= 1)
-            {
-                portal --;
-                coin -= 20;
-                startLevel2();
-                map[i][j] = 0;
-            }
-        }
-    }
-}
-void checkColisionBonus()
-{
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
-            if (map[i][j] == 8 && abs(j - playerX) <= 1 && abs(i - playerY) <= 1)
-            {
-                coin++;
-                map[i][j] = 0;
-                spawnBonus();
-            }
-        }
-    }
-}
-void checkColisionHeart()
-{
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
-            if (map[i][j] == 9 && abs(j - playerX) <= 1 && abs(i - playerY) <= 1)
-            {
-                health++;
-                heart = 0;
-                map[i][j] = 0;
-            }
-        }
-    }
-}
-void plant(int x, int y, int what)
-{
-    if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
-        map[y][x] = what;
-}
-void randomPlant()
-{
-    for (int i = 0; i < 15; i++)
-    {
-        int x = rand() % width;
-        int y = rand() % height;
-        int plantType = 3 + rand() % 3;
-        plant(x, y, plantType);
-    }
-}
-void spawnEnemies()
-{
-    countEnemies = 3 + rand() % 10;
-    for (int i = 0; i < countEnemies; i++)
-    {
-        int x, y;
-        do
-        {
-            x = rand() % width;
-            y = rand() % height;
-        } while (map[y][x] != 0 || (x == playerX && y == playerY));
+// ================== GAME LOOP ==================
+void gameLoop(){
 
-        enemyX[i] = x;
-        enemyY[i] = y;
-        map[y][x] = 7;
-    }
-}
-void moveEnemies()
-{
-    for (int i = 0; i < countEnemies; i++)
-    {
-        map[enemyY[i]][enemyX[i]] = 0;
+    drawPlayer();
 
-        if (moveCounter % 3 == 0)
-        {
-            if (enemyX[i] < playerX && map[enemyY[i]][enemyX[i] + 1] == 0)
-                enemyX[i]++;
-            else if (enemyX[i] > playerX && map[enemyY[i]][enemyX[i] - 1] == 0)
-                enemyX[i]--;
-            else if (enemyY[i] < playerY && map[enemyY[i] + 1][enemyX[i]] == 0)
-                enemyY[i]++;
-            else if (enemyY[i] > playerY && map[enemyY[i] - 1][enemyX[i]] == 0)
-                enemyY[i]--;
-        }
+    while(health>0){
 
-        map[enemyY[i]][enemyX[i]] = 7;
-    }
-}
-void refreshEnemiesOnMap()
-{
-    for (int i = 0; i < countEnemies; i++)
-        if (map[enemyY[i]][enemyX[i]] == 0)
-            map[enemyY[i]][enemyX[i]] = 7;
-}
-void drawPlayer(int x, int y)
-{
-    if (x >= 0 && x < width && y >= 0 && y < height && map[y][x] == 0)
-        map[y][x] = 6;
-}
-void gameLoop()
-{
-    char c;
-    drawPlayer(playerX, playerY);
-    while (1)
-    {
-        if (kbhit())
-        {
-            c = getchar();
-            beforePlayerX = playerX;
-            beforePlayerY = playerY;
-            map[playerY][playerX] = 0;
+        if(kbhit()){
 
-            if ((c == 'w' || c == 'W') && map[playerY - 1][playerX] == 0)
-                playerY--;
-            else if ((c == 's' || c == 'S') && map[playerY + 1][playerX] == 0)
-                playerY++;
-            else if ((c == 'a' || c == 'A') && map[playerY][playerX - 1] == 0)
-                playerX--;
-            else if ((c == 'd' || c == 'D') && map[playerY][playerX + 1] == 0)
-                playerX++;
-            else if ((c == 'q' || c == 'Q'))
-                break;
-            afterPlayerX = playerX;
-            afterPlayerY = playerY;
-            if (beforePlayerX == afterPlayerX && beforePlayerY == afterPlayerY)
-                health--;
-            if (health <= 0)
-            {
-                loseScreen();
-                break;
-            }
-            else if (health < 3 && heart != 1)
-            {
-                spawnHeart();
-                heart=1;
-            }
-            if(coin >= 10 && portal == 0) {
-                portal++;
-                spawnPortal();
-            }
-            // substructHeard();
-            drawPlayer(playerX, playerY);
+            movePlayer();
+            updateHealth();
+            updateObjects();
             moveEnemies();
-            moveCounter += 2;
-            refreshEnemiesOnMap();
-            checkColisionBonus();
-            checkColisionHeart();
-            checkColisionPortal();
-            system("clear");
-            printf("coins: %d   health: %d\n", coin, health);
-            drawMap();
+
+            drawPlayer();
+            render();
         }
 
         usleep(50000);
     }
 }
-void resetMap()
-{
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            if (map[y][x] != 0 && map[y][x] != 1 && map[y][x] != 2)
-            {
-                map[y][x] = 0;
-            }
-        }
-    }
+
+// ================== START ==================
+void resetGame(){
+    playerX=2;
+    playerY=2;
+    health=3;
+    coin=0;
+    moveCounter=0;
+    portal=0;
+    heart=0;
 }
-void resetVariable()
-{
-    playerX = 2;
-    playerY = 2;
-    health = 3;
-    coin = 0;
-    moveCounter = 0;
-    countEnemies = 0;
-    resetMap();
-}
-void startGame()
-{
+
+void startGame(){
+
     system("clear");
     srand(time(NULL));
-    resetVariable();
-    printf("coins: %d\n", coin);
-    randomPlant();
+
+    resetGame();
+    initMap();
+
     spawnEnemies();
-    spawnBonus();
+    spawnObject(8);
+
     drawMap();
-    beforePlayerX = playerX;
-    beforePlayerY = playerY;
     gameLoop();
 }
